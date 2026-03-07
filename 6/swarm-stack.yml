@@ -1,0 +1,48 @@
+version: "3.8"
+
+services:
+  web:
+    image: wacko52/fast-api:latest
+    env_file:
+      - .env.swarm
+    environment:
+      DB_HOST: db
+      DB_USER: appuser
+      DB_PASSWORD: apppass
+      DB_NAME: appdb
+    networks:
+      - backend
+    ports:
+      - "8080:8080"
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: on-failure
+
+  db:
+    image: mysql:8
+    env_file:
+      - .env.swarm
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: appdb
+      MYSQL_USER: appuser
+      MYSQL_PASSWORD: apppass
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - backend
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.role == manager
+
+networks:
+  backend:
+    driver: overlay
+
+volumes:
+  mysql_data:

@@ -1,0 +1,10 @@
+﻿yc_token            = "your-iam-token"
+cloud_id            = "your-cloud-id"
+folder_id           = "your-folder-id"
+# If you run terraform from WSL/Linux, use a Linux path, for example:
+# ssh_public_key_path = "/mnt/c/Users/Honor/.ssh/id_ed25519.pub"
+# If you run terraform from Windows PowerShell, use a Windows path:
+ssh_public_key_path = "C:/Users/Honor/.ssh/id_ed25519.pub"
+
+# Narrow SSH access to your own IP/network before apply.
+allowed_ssh_cidr_blocks = ["0.0.0.0/0"]
