@@ -1,0 +1,45 @@
+{
+  "builders": [
+    {
+      "type": "yandex",
+      "token": "токен секретно ужас айай",
+      "folder_id": "b1g2tm3nfs0k8rodelqc",
+      "zone": "ru-central1-a",
+      "image_name": "debian-11-docker",
+      "image_description": "my custom debian with docker",
+      "source_image_family": "debian-11",
+      "subnet_id": "e9blv1ck8b356hk9k455",
+      "use_ipv4_nat": true,
+      "disk_type": "network-hdd",
+      "ssh_username": "debian"
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "shell",
+      "inline": [
+        "echo 'hello from packer'"
+      ]
+    },
+    {
+      "type": "shell",
+      "inline": [
+        "sudo sed -i '/bullseye-backports/d' /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null || true",
+        "sudo apt update",
+        "sudo apt install -y ca-certificates curl",
+        "sudo install -m 0755 -d /etc/apt/keyrings",
+        "sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc",
+        "sudo chmod a+r /etc/apt/keyrings/docker.asc",
+        "sudo tee /etc/apt/sources.list.d/docker.sources <<EOF\nTypes: deb\nURIs: https://download.docker.com/linux/debian\nSuites: $(. /etc/os-release && echo $VERSION_CODENAME)\nComponents: stable\nSigned-By: /etc/apt/keyrings/docker.asc\nEOF",
+        "sudo apt update",
+        "sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin"
+      ]
+    },
+    {
+      "type": "shell",
+      "inline": [
+        "sudo apt install -y htop tmux"
+      ]
+    }
+  ]
+}
