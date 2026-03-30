@@ -29,9 +29,9 @@ module "vpc_dev" {
   ]
 }
 
-locals{
-    is_ha = true
-}
+# locals{
+#     is_ha = true
+# }
 
 # module "example_cluster" {
 #   source       = "./mysql"
@@ -60,7 +60,7 @@ locals{
 # }
 
 module "m-vm" {
-  source         = "git::https://github.com/udjin10/yandex_compute_instance.git?ref=main"
+  source         = "git::https://github.com/udjin10/yandex_compute_instance.git?ref=4421e3a"
   env_name       = "develop" 
   network_id     = module.vpc_dev.vpc_network_id
   subnet_zones   = module.vpc_dev.vpc_zone
@@ -83,7 +83,7 @@ module "m-vm" {
 }
 
 module "a-vm" {
-  source         = "git::https://github.com/udjin10/yandex_compute_instance.git?ref=main"
+  source         = "git::https://github.com/udjin10/yandex_compute_instance.git?ref=4421e3a"
   env_name       = "production"
   network_id     = module.vpc_prod.vpc_network_id
   subnet_zones   = module.vpc_prod.vpc_zone

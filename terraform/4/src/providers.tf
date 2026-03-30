@@ -2,9 +2,15 @@ terraform {
   required_providers {
     yandex = {
       source = "yandex-cloud/yandex"
+      version = "~> 0.130"
     }
     random = {
       source = "hashicorp/random"
+      version = "~> 3.6"
+    }
+    template = {
+      source = "hashicorp/template"
+      version = "~> 2.2"
     }
   }
   backend "s3" {
