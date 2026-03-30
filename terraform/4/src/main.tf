@@ -33,31 +33,31 @@ locals{
     is_ha = true
 }
 
-module "example_cluster" {
-  source       = "./mysql"
-  cluster_name  = "example-mysql-cluster"
-  network_id    = local.is_ha ? module.vpc_prod.vpc_network_id : module.vpc_dev.vpc_network_id
-  HA            = local.is_ha
-  subnets = local.is_ha ? [
-    { zone = "ru-central1-a", subnet_id = module.vpc_prod.vpc_subnet_ids[0] },
-    { zone = "ru-central1-b", subnet_id = module.vpc_prod.vpc_subnet_ids[1] }
-  ] : [
-    { zone = "ru-central1-a", subnet_id = module.vpc_dev.vpc_subnet_ids[0] }
-  ]
-  cluster_resources = {
-    resource_preset_id = "s2.micro",
-    disk_type_id = "network-ssd",
-    disk_size = local.is_ha ? 20 : 10
-  }
-}
+# module "example_cluster" {
+#   source       = "./mysql"
+#   cluster_name  = "example-mysql-cluster"
+#   network_id    = local.is_ha ? module.vpc_prod.vpc_network_id : module.vpc_dev.vpc_network_id
+#   HA            = local.is_ha
+#   subnets = local.is_ha ? [
+#     { zone = "ru-central1-a", subnet_id = module.vpc_prod.vpc_subnet_ids[0] },
+#     { zone = "ru-central1-b", subnet_id = module.vpc_prod.vpc_subnet_ids[1] }
+#   ] : [
+#     { zone = "ru-central1-a", subnet_id = module.vpc_dev.vpc_subnet_ids[0] }
+#   ]
+#   cluster_resources = {
+#     resource_preset_id = "s2.micro",
+#     disk_type_id = "network-ssd",
+#     disk_size = local.is_ha ? 20 : 10
+#   }
+# }
 
-module "example_db" {
-  source = "./mysql_db"
-  cluster_id = module.example_cluster.cluster_id
-  db_name =  "test"
-  db_user = "app"
-  db_password = random_password.db_password.result
-}
+# module "example_db" {
+#   source = "./mysql_db"
+#   cluster_id = module.example_cluster.cluster_id
+#   db_name =  "test"
+#   db_user = "app"
+#   db_password = random_password.db_password.result
+# }
 
 module "m-vm" {
   source         = "git::https://github.com/udjin10/yandex_compute_instance.git?ref=main"
