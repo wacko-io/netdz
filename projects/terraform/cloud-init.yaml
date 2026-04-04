@@ -1,0 +1,96 @@
+#cloud-config
+datasource:
+  Ec2:
+    strict_id: false
+
+ssh_pwauth: no
+
+users:
+  - name: ubuntu
+    sudo: "ALL=(ALL) NOPASSWD:ALL"
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ${ssh_key}
+
+package_update: true
+packages:
+  - ca-certificates
+  - curl
+  - gnupg
+  - lsb-release
+
+write_files:
+  - path: /usr/local/etc/docker-install.sh
+    permissions: "0755"
+    owner: root:root
+    defer: true
+    content: |
+      #!/bin/bash
+      set -euxo pipefail
+
+      apt-get remove -y docker.io docker-doc docker-compose docker-compose-v2 podman-docker || true
+
+      install -m 0755 -d /etc/apt/keyrings
+      curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+      chmod a+r /etc/apt/keyrings/docker.gpg
+
+      echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list
+
+      apt-get update
+      apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+      systemctl enable docker
+      systemctl restart docker
+
+      usermod -aG docker ubuntu
+
+      docker --version
+      docker compose version
+
+  - path: /usr/local/etc/yc-install.sh
+    permissions: "0755"
+    owner: ubuntu:ubuntu
+    defer: true
+    content: |
+      #!/bin/bash
+      set -euxo pipefail
+
+      curl --silent --show-error --location https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
+
+      VM_ID=$(curl --silent http://169.254.169.254/latest/meta-data/instance-id || true)
+
+      grep -qxF 'export PATH="$HOME/yandex-cloud/bin:$PATH"' "$HOME/.bashrc" || \
+        echo 'export PATH="$HOME/yandex-cloud/bin:$PATH"' >> "$HOME/.bashrc"
+
+      grep -qxF 'export PATH="$HOME/yandex-cloud/bin:$PATH"' "$HOME/.profile" || \
+        echo 'export PATH="$HOME/yandex-cloud/bin:$PATH"' >> "$HOME/.profile"
+
+      grep -qxF 'export YC_CLI_VM_ID="$${VM_ID:-unknown}"' "$HOME/.bashrc" || \
+        echo 'export YC_CLI_VM_ID="$${VM_ID:-unknown}"' >> "$HOME/.bashrc"
+
+      grep -qxF 'export YC_CLI_VM_ID="$${VM_ID:-unknown}"' "$HOME/.profile" || \
+        echo 'export YC_CLI_VM_ID="$${VM_ID:-unknown}"' >> "$HOME/.profile"
+
+      export PATH="$HOME/yandex-cloud/bin:$PATH"
+      yc version
+
+  - path: /usr/local/etc/docker-yc-auth.sh
+    permissions: "0755"
+    owner: ubuntu:ubuntu
+    defer: true
+    content: |
+      #!/bin/bash
+      set -euxo pipefail
+
+      export PATH="$HOME/yandex-cloud/bin:$PATH"
+      
+      yc config set instance-service-account true
+      
+      yc container registry configure-docker
+
+runcmd:
+  - echo "INSTALLATION STARTED"
+  - [bash, /usr/local/etc/docker-install.sh]
+  - [su, ubuntu, -c, /usr/local/etc/yc-install.sh]
+  - [su, ubuntu, -c, /usr/local/etc/docker-yc-auth.sh]
+  - echo "INSTALLATION FINISHED"

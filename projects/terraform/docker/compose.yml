@@ -1,0 +1,16 @@
+services:
+  web:
+    image: cr.yandex/crpm6n26clgn7tcol3v3/web:v2
+    env_file:
+      - .env
+    restart: unless-stopped
+  nginx:
+    image: nginx:latest
+    ports:
+      - "8090:8090"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - web
+    restart: unless-stopped
