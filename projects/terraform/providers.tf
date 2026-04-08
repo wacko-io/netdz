@@ -14,7 +14,8 @@ terraform {
     bucket = "terraform-project-state"
     key    = "terraform.tfstate"
     region = "ru-central1"
-
+    use_lockfile = true
+    
     skip_region_validation      = true
     skip_credentials_validation = true
     skip_requesting_account_id  = true
