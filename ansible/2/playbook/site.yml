@@ -1,0 +1,104 @@
+---
+- name: Install Clickhouse
+  hosts: rockylinux8
+  handlers:
+    - name: Start clickhouse service
+      ansible.builtin.service:
+        name: clickhouse-server
+        state: restarted
+  tasks:
+    - name: Download clickhouse packages
+      block:
+        - name: Get clickhouse distrib
+          ansible.builtin.get_url:
+            url: "https://packages.clickhouse.com/rpm/stable/{{ item }}-{{ clickhouse_version }}.noarch.rpm"
+            dest: "/tmp/{{ item }}-{{ clickhouse_version }}.rpm"
+            mode: "0644"
+          with_items: "{{ clickhouse_packages }}"
+      rescue:
+        - name: Get clickhouse distrib
+          ansible.builtin.get_url:
+            url: "https://packages.clickhouse.com/rpm/stable/clickhouse-common-static-{{ clickhouse_version }}.x86_64.rpm"
+            dest: "/tmp/clickhouse-common-static-{{ clickhouse_version }}.rpm"
+            mode: "0644"
+    - name: Install clickhouse packages
+      ansible.builtin.yum:
+        name:
+          - /tmp/clickhouse-common-static-{{ clickhouse_version }}.rpm
+          - /tmp/clickhouse-client-{{ clickhouse_version }}.rpm
+          - /tmp/clickhouse-server-{{ clickhouse_version }}.rpm
+        disable_gpg_check: true
+      notify: Start clickhouse service
+    - name: Flush handlers
+      ansible.builtin.meta: flush_handlers
+    - name: Create database
+      ansible.builtin.command: "clickhouse-client -q 'create database logs;'"
+      register: create_db
+      failed_when: create_db.rc != 0 and create_db.rc != 82
+      changed_when: create_db.rc == 0
+
+- name: Install Vector
+  hosts: rockylinux8
+  handlers:
+    - name: Restart vector
+      ansible.builtin.systemd:
+        name: vector
+        state: restarted
+        daemon_reload: true
+  tasks:
+    - name: Create Directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - /opt
+        - /etc/vector
+        - /var/lib/vector
+    - name: Download vector archive
+      ansible.builtin.get_url:
+        url: "{{ vector_url }}"
+        dest: "/tmp/{{ vector_archive }}"
+        mode: '0644'
+    - name: Unarchive vector
+      ansible.builtin.unarchive:
+        src: "/tmp/{{ vector_archive }}"
+        dest: /opt
+        remote_src: true
+        creates: "{{ vector_release_dir }}/bin/vector"
+    - name: Deploy vector config
+      ansible.builtin.template:
+        src: templates/vector.yml.j2
+        dest: /etc/vector/vector.yaml
+        mode: '0644'
+      notify: Restart vector
+    - name: Create systemd unit for Vector
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/vector.service
+        mode: '0644'
+        content: |
+          [Unit]
+          Description=Vector
+          Documentation=https://vector.dev
+          After=network-online.target
+          Requires=network-online.target
+
+          [Service]
+          User=root
+          Group=root
+          ExecStart={{ vector_release_dir }}/bin/vector --config /etc/vector/vector.yaml
+          ExecReload=/bin/kill -HUP $MAINPID
+          Restart=no
+          StandardOutput=syslog
+          StandardError=syslog
+          SyslogIdentifier=vector
+
+          [Install]
+          WantedBy=multi-user.target
+      notify: Restart vector
+    - name: Checking Vector
+      ansible.builtin.systemd:
+        name: vector
+        state: started
+        enabled: true
+        daemon_reload: true

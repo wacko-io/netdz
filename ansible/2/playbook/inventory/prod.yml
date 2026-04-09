@@ -1,0 +1,9 @@
+---
+clickhouse:
+  hosts:
+    rockylinux8:
+      ansible_connection: docker
+vector:
+  hosts:
+    rockylinux8:
+      ansible_connection: docker
