@@ -1,0 +1,6 @@
+---
+clickhouse_version: "22.3.3.44"
+clickhouse_packages:
+  - { name: "clickhouse-client", arch: "noarch" }
+  - { name: "clickhouse-server", arch: "noarch" }
+  - { name: "clickhouse-common-static", arch: "x86_64" }

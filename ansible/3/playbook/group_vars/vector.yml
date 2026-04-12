@@ -1,0 +1,4 @@
+---
+clickhouse_host: "clickhouse-01"
+clickhouse_user: "cl_admin"
+clickhouse_password: "dgksk!ds)_dsg"
