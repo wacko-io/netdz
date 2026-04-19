@@ -1,0 +1,10 @@
+.tox/
+.molecule/
+.cache/
+__pycache__/
+.pytest_cache/
+*.pyc
+*.pyo
+*.swp
+*.swo
+.idea/

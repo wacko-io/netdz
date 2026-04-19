@@ -1,0 +1,4 @@
+files/*
+venv/
+.tox/
+.ansible_async/

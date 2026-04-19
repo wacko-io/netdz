@@ -1,0 +1,33 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: podman
+platforms:
+  - name: ubuntu-latest
+    image: ubuntu:latest
+    pre_build_image: true
+    command: sleep infinity
+    privileged: true
+  - name: oraclelinux-8
+    image: oraclelinux:8
+    pre_build_image: true
+    command: sleep infinity
+    privileged: true
+
+provisioner:
+  name: ansible
+  playbooks:
+    prepare: prepare.yml
+  env:
+    ANSIBLE_ALLOW_BROKEN_CONDITIONALS: "true"
+verifier:
+  name: ansible
+scenario:
+  test_sequence:
+    - destroy
+    - create
+    - prepare
+    - converge
+    - verify
+    - destroy

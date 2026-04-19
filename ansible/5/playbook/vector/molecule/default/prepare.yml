@@ -1,0 +1,18 @@
+---
+- name: Prepare
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Install Python on Ubuntu
+      raw: /bin/sh -lc 'export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y python3 sudo'
+      when: "'ubuntu' in inventory_hostname"
+      changed_when: false
+
+    - name: Install Python on Oracle Linux
+      raw: dnf install -y python3 sudo
+      when: "'oracle' in inventory_hostname"
+      changed_when: false
+
+    - name: Trick Ansible to ignore systemctl inside containers
+      raw: /bin/sh -lc 'printf "#!/bin/sh\nexit 0\n" > /usr/bin/systemctl && chmod +x /usr/bin/systemctl && mkdir -p /run/systemd/system'
+      changed_when: false

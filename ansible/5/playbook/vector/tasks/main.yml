@@ -1,0 +1,61 @@
+---
+- name: Create Directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - /opt
+    - /etc/vector
+    - /var/lib/vector
+- name: Download vector archive
+  ansible.builtin.get_url:
+    url: "https://github.com/vectordotdev/vector/releases/download/v{{ vector_version }}/vector-{{ vector_version }}-x86_64-unknown-linux-musl.tar.gz"
+    dest: "/tmp/vector-{{ vector_version }}-x86_64-unknown-linux-musl.tar.gz"
+  register: download_vector
+  until: download_vector is succeeded
+  retries: 3
+  delay: 5
+- name: Unarchive vector
+  ansible.builtin.unarchive:
+    src: "/tmp/{{ vector_archive }}"
+    dest: /opt
+    remote_src: true
+    creates: "{{ vector_release_dir }}/bin/vector"
+- name: Deploy vector config
+  ansible.builtin.template:
+    src: vector.conf.j2
+    dest: /etc/vector/vector.conf
+    mode: '0644'
+  notify: Restart vector
+- name: Create systemd unit for Vector
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/vector.service
+    mode: '0644'
+    content: |
+      [Unit]
+      Description=Vector
+      Documentation=https://vector.dev
+      After=network-online.target
+      Requires=network-online.target
+
+      [Service]
+      User=root
+      Group=root
+      ExecStart={{ vector_release_dir }}/bin/vector --config /etc/vector/vector.conf
+      ExecReload=/bin/kill -HUP $MAINPID
+      Restart=no
+      StandardOutput=syslog
+      StandardError=syslog
+      SyslogIdentifier=vector
+
+      [Install]
+      WantedBy=multi-user.target
+  notify: Restart vector
+- name: Checking Vector
+  ansible.builtin.systemd:
+    name: vector
+    state: started
+    enabled: true
+    daemon_reload: true
+  when: ansible_virtualization_type not in ["docker", "podman", "container"]

@@ -1,0 +1,57 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Get Vector config file stat
+      ansible.builtin.stat:
+        path: /etc/vector/vector.conf
+      register: vector_config_file
+
+    - name: Assert Vector config file exists
+      ansible.builtin.assert:
+        that: vector_config_file.stat.exists
+        fail_msg: "Config file /etc/vector/vector.conf is missing!"
+        success_msg: "Config file exists."
+
+    - name: Find Vector binary path
+      ansible.builtin.find:
+        paths: /opt
+        patterns: "vector"
+        file_type: file
+        recurse: true
+      register: vector_binary_search
+
+    - name: Extract Vector binary path
+      ansible.builtin.set_fact:
+        vector_bin_path: "{{ vector_binary_search.files[0].path }}"
+      when: vector_binary_search.matched > 0
+
+    - name: Assert Vector binary was found
+      ansible.builtin.assert:
+        that: vector_binary_search.matched > 0
+        fail_msg: "Could not find vector binary in /opt!"
+        success_msg: "Found Vector binary at {{ vector_bin_path }}"
+
+    - name: Check Vector version
+      ansible.builtin.command: "{{ vector_bin_path }} --version"
+      register: vector_version_check
+      changed_when: false
+
+    - name: Assert Vector is installed and executable
+      ansible.builtin.assert:
+        that: vector_version_check.rc == 0
+        fail_msg: "Vector binary is not working!"
+        success_msg: "Vector binary works fine."
+
+    - name: Validate Vector configuration
+      ansible.builtin.command: "{{ vector_bin_path }} validate --no-environment /etc/vector/vector.conf"
+      register: vector_validate_check
+      changed_when: false
+      ignore_errors: true
+
+    - name: Assert Vector config is valid
+      ansible.builtin.assert:
+        that: vector_validate_check.rc == 0
+        fail_msg: "Vector configuration validation failed! Check syntax."
+        success_msg: "Vector configuration is perfectly valid."

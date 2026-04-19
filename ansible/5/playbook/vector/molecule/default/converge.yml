@@ -1,0 +1,15 @@
+---
+# Purpose: bring the instance to the desired state by running the role under test.
+# Molecule calls this playbook with `molecule converge`.
+- name: Converge
+  hosts: all
+  gather_facts: false # Disable if your role does not rely on facts
+  vars:
+    clickhouse_host: "127.0.0.1"
+    clickhouse_user: "user"
+    clickhouse_password: "password"
+    ansible_python_interpreter: /usr/bin/python3
+  tasks:
+    - name: Apply role under test
+      ansible.builtin.include_role:
+        name: netology.vector

@@ -1,0 +1,5 @@
+---
+vector_version: "0.24.0"
+some_host: "clickhouse"
+some_user: "user"
+some_password: "password"

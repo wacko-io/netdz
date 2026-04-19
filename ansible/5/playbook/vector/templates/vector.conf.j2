@@ -1,0 +1,28 @@
+data_dir = "/var/lib/vector"
+
+[sources.generate_syslog]
+type = "demo_logs"
+format = "syslog"
+count = 100
+
+[transforms.remap_syslog]
+inputs = ["generate_syslog"]
+type = "remap"
+source = '''
+structured = parse_syslog!(.message)
+. = merge(., structured)
+'''
+
+[sinks.to_clickhouse]
+type = "clickhouse"
+inputs = ["remap_syslog"]
+endpoint = "http://{{ clickhouse_host }}:8123"
+database = "logs"
+table = "syslog"
+skip_unknown_fields = true
+compression = "gzip"
+
+[sinks.to_clickhouse.auth]
+strategy = "basic"
+user = "{{ clickhouse_user }}"
+password = "{{ clickhouse_password }}"
