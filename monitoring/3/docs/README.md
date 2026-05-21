@@ -1,0 +1,10 @@
+1
+![img.png](img.png)
+![img_1.png](img_1.png)
+monitoring/3/compose.yaml
+monitoring/3/filebeat.yml
+monitoring/3/config/pipelines.yml
+monitoring/3/config/pipeline/logstash.conf
+2
+![img_2.png](img_2.png)
+![img_3.png](img_3.png)

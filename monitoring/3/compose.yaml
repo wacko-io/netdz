@@ -1,0 +1,83 @@
+services:
+  es-hot:
+    container_name: es-hot
+    image: "docker.elastic.co/elasticsearch/elasticsearch:7.17.21"
+    networks:
+        - elk
+    environment:
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - "node.name=es-hot"
+      - "cluster.name=elk-cluster"
+      - "discovery.seed_hosts=es-warm"
+      - "cluster.initial_master_nodes=es-hot,es-warm"
+      - "node.attr.box_type=hot"
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_hot_data:/usr/share/elasticsearch/data
+
+  es-warm:
+    container_name: es-warm
+    image: "docker.elastic.co/elasticsearch/elasticsearch:7.17.21"
+    networks:
+        - elk
+    environment:
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - "node.name=es-warm"
+      - "cluster.name=elk-cluster"
+      - "discovery.seed_hosts=es-hot"
+      - "cluster.initial_master_nodes=es-hot,es-warm"
+      - "node.attr.box_type=warm"
+    volumes:
+      - es_warm_data:/usr/share/elasticsearch/data
+
+  logstash:
+    container_name: logstash
+    image: "docker.elastic.co/logstash/logstash:7.17.21"
+    networks:
+      - elk
+    environment:
+      XPACK_MONITORING_ENABLED: "false"
+    ports:
+      - "5044:5044"
+      - "5046:5046"
+    volumes:
+      - ./config/pipeline/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+
+  kibana:
+    container_name: kibana
+    image: "docker.elastic.co/kibana/kibana:7.17.21"
+    networks:
+      - elk
+    environment:
+      - ELASTICSEARCH_HOSTS=http://es-hot:9200
+    ports:
+      - "5601:5601"
+
+  filebeat:
+    container_name: filebeat
+    image: "docker.elastic.co/beats/filebeat:7.17.21"
+    networks:
+      - elk
+    user: root
+    volumes:
+      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: filebeat -e -strict.perms=false
+
+  some_application:
+    image: library/python:3.9-alpine
+    container_name: some_app
+    command: sh -c "python3 -u /opt/run.py | tee /var/log/app/app.log"
+    networks:
+        - elk
+    volumes:
+      - app_logs:/var/log/app
+
+volumes:
+  es_hot_data:
+  es_warm_data:
+  app_logs:
+networks:
+  elk:
