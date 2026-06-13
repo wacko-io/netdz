@@ -1,0 +1,24 @@
+[sources.docker_logs]
+type = "docker_logs"
+include_containers = ["security", "uploader"]
+
+[transforms.es_format]
+type = "remap"
+inputs = ["docker_logs"]
+source = '''
+  clean_log = {}
+  clean_log."@timestamp" = .timestamp
+  clean_log.container = .container_name
+  clean_log.message = .message
+
+  . = clean_log
+'''
+
+[sinks.out_to_elastic]
+type = "elasticsearch"
+inputs = ["es_format"]
+endpoints = ["http://elasticsearch:9200"]
+api_version = "v8"
+mode = "bulk"
+bulk.action = "create"
+bulk.index = "logs-api-default"

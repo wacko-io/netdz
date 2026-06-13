@@ -1,0 +1,154 @@
+volumes:
+  data:
+  prometheus-data:
+  grafana_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  internal:
+    driver: bridge
+
+services:
+  storage:
+    image: coollabsio/minio:latest
+    container_name: storage
+    command: server /data --console-address ":9001"
+    restart: always
+    expose: 
+      - 9000
+    environment:
+      MINIO_ROOT_USER: ${Storage_AccessKey:-STORAGE_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${Storage_Secret:-STORAGE_SECRET_KEY}
+      MINIO_PROMETHEUS_AUTH_TYPE: public
+    volumes:
+      - data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - internal
+
+  createbuckets:
+    image: minio/mc:latest
+    depends_on:
+      - storage
+    restart: on-failure
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set storage http://storage:9000 ${Storage_AccessKey:-minioadmin} ${Storage_Secret:-minioadmin123} &&
+      /usr/bin/mc mb --ignore-existing storage/${Storage_Bucket:-images} &&
+      /usr/bin/mc anonymous set download storage/${Storage_Bucket:-images} &&
+      exit 0;
+      "
+    networks:
+      - internal
+
+  uploader:
+    build: ./uploader
+    container_name: uploader
+    depends_on:
+      - storage
+      - createbuckets
+    expose:
+      - 3000
+    environment:
+      PORT: 3000
+      S3_HOST: storage
+      S3_PORT: 9000
+      S3_ACCESS_KEY: ${Storage_AccessKey:-STORAGE_ACCESS_KEY}
+      S3_ACCESS_SECRET: ${Storage_Secret:-STORAGE_SECRET_KEY}
+      S3_BUCKET: ${Storage_Bucket:-STORAGE_BUCKET}
+    networks:
+      - internal
+  
+  security:
+    build: ./security
+    container_name: security
+    expose: 
+      - 3000
+    environment:
+      PORT: 3000
+    networks:
+      - internal
+
+  caddy:
+    image: caddy:2.8.4-alpine
+    container_name: caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./gateway/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      - Storage_Bucket=${Storage_Bucket:-images}
+    depends_on:
+      - storage
+      - uploader
+      - security
+    networks:
+      - internal
+
+#  elasticsearch:
+#    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.2
+#    container_name: elasticsearch
+#    environment:
+#      - discovery.type=single-node
+#      - xpack.security.enabled=false
+#    ports:
+#      - "9200:9200"
+#
+#  kibana:
+#    image: docker.elastic.co/kibana/kibana:8.10.2
+#    container_name: kibana
+#    environment:
+#      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+#      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY="a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4"
+#    ports:
+#      - "8081:5601"
+#    depends_on:
+#      - elasticsearch
+#
+#  vector:
+#    image: timberio/vector:0.33.0-alpine
+#    container_name: vector
+#    volumes:
+#      - ./vector.toml:/etc/vector/vector.toml:ro
+#      - /var/run/docker.sock:/var/run/docker.sock:ro
+#    depends_on:
+#      - elasticsearch
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    restart: unless-stopped
+    networks:
+      - internal
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "8081:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=qwerty123456
+    volumes:
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    networks:
+      - internal

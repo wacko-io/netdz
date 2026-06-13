@@ -1,0 +1,49 @@
+{
+    local_certs
+}
+
+localhost:80 {
+    handle / {
+        respond "API Gateway is running"
+    }
+
+    handle /v1/register {
+        method POST
+        reverse_proxy security:3000
+    }
+
+    handle /v1/token {
+        method POST
+        reverse_proxy security:3000
+    }
+
+    handle /v1/user {
+        forward_auth security:3000 {
+            uri /v1/token/validation
+            copy_headers Authorization
+        }
+        method GET
+        reverse_proxy security:3000
+    }
+
+    handle /v1/upload {
+        forward_auth security:3000 {
+            uri /v1/token/validation
+            copy_headers Authorization
+        }
+        method POST
+        reverse_proxy uploader:3000
+    }
+
+    handle_path /v1/user/* {
+        forward_auth security:3000 {
+            uri /v1/token/validation
+            copy_headers Authorization
+        }
+        method GET
+        uri strip_prefix /v1/user
+        rewrite * /{$Storage_Bucket}{path}
+        request_header -Authorization
+        reverse_proxy storage:9000
+    }
+}

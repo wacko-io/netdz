@@ -1,0 +1,66 @@
+{
+  "title": "API Metrics",
+  "uid": "api-metrics",
+  "panels": [
+    {
+      "id": 1,
+      "type": "piechart",
+      "title": "Распределение запросов по сервисам",
+      "gridPos": {"h": 12, "w": 12, "x": 0, "y": 0},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(http_requests_total{app_name!=\"\"}[5m])) by (app_name)",
+          "legendFormat": "{{app_name}}",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "expr": "sum(increase(http_request_total{app_name!=\"\"}[5m])) by (app_name)",
+          "legendFormat": "{{app_name}}",
+          "instant": true
+        },
+        {
+          "refId": "C",
+          "expr": "sum(increase(minio_s3_requests_total[5m])) + sum(increase(minio_s3_requests_4xx_errors_total[5m]))",
+          "legendFormat": "storage",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "pieType": "donut",
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "values": ["value", "percent"]
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      }
+    }
+  ],
+  "templating": {
+    "list": []
+  },
+  "schemaVersion": 38,
+  "refresh": "10s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  }
+}
