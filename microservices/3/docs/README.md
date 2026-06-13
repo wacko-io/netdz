@@ -107,3 +107,4 @@ Grafana позволяет формировать URL-ссылки, которы
 ![img.png](img.png)
 
 Задание 5
+![alt text](image-1.png)
