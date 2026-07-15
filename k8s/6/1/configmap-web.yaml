@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+       <title>ConfigMap</title>
+    </head>    
+    <body>
+      <h1>say hi from k8s</h1>    
+    </body>
+    </html>
