@@ -1,0 +1,6 @@
+﻿cloud_id                 = "b1gxxxxxxxxxxxxxxxxx"
+folder_id                = "b1gxxxxxxxxxxxxxxxxx"
+service_account_key_file = "~/.ssh/yc_terraform_authorized_key.json"
+ssh_public_key_path      = "~/.ssh/id_rsa.pub"
+default_zone             = "ru-central1-a"
+k8s_version              = "1.34"
