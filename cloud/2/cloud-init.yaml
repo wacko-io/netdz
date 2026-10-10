@@ -1,0 +1,83 @@
+#cloud-config
+datasource:
+  Ec2:
+    strict_id: false
+
+ssh_pwauth: no
+
+users:
+  - name: ubuntu
+    sudo: "ALL=(ALL) NOPASSWD:ALL"
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ${ssh_key}
+
+write_files:
+  - path: /var/www/html/index.html
+    permissions: "0644"
+    owner: root:root
+    content: |
+      <!DOCTYPE html>
+      <html lang="ru">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Netology LAMP Instance</title>
+          <style>
+              body {
+                  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                  background-color: #181818;
+                  color: #e0e0e0;
+                  display: flex;
+                  justify-content: center;
+                  align-items: center;
+                  min-height: 100vh;
+                  margin: 0;
+              }
+              .container {
+                  background: #242424;
+                  border: 1px solid #333;
+                  border-radius: 12px;
+                  padding: 32px;
+                  max-width: 680px;
+                  text-align: center;
+                  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+              }
+              h1 { color: #f3ae35; margin-bottom: 8px; font-size: 26px; }
+              p { color: #aaa; margin-top: 0; }
+              img {
+                  max-width: 100%;
+                  height: auto;
+                  border-radius: 8px;
+                  border: 2px solid #444;
+                  margin: 20px 0;
+              }
+              .badge {
+                  display: inline-block;
+                  padding: 4px 12px;
+                  background: #23d18b;
+                  color: #181818;
+                  font-weight: bold;
+                  border-radius: 20px;
+                  font-size: 13px;
+                  margin-top: 10px;
+              }
+          </style>
+      </head>
+      <body>
+          <div class="container">
+              <h1>Netology Cloud - Задание 2</h1>
+              <p>LAMP Instance Group за сетевым балансировщиком NLB</p>
+              <img src="${image_url}" alt="Netology Object Storage Image">
+              <div>
+                  <span class="badge">HOST: HOSTNAME_PLACEHOLDER</span>
+              </div>
+          </div>
+      </body>
+      </html>
+
+runcmd:
+  - rm -f /var/www/html/index.php
+  - sed -i "s/HOSTNAME_PLACEHOLDER/$(hostname)/g" /var/www/html/index.html
+  - systemctl enable apache2
+  - systemctl restart apache2
