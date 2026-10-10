@@ -1,0 +1,4 @@
+cloud_id           = "your_cloud_id"
+folder_id          = "your_folder_id"
+service_account_id = "your_service_account_id"
+db_password        = "your_db_password"
